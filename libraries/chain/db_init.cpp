@@ -111,6 +111,7 @@ void database::initialize_evaluators()
    register_evaluator<account_update_evaluator>();
    register_evaluator<custom_evaluator>();
    register_evaluator<asset_create_evaluator>();
+   register_evaluator<asset_create2_evaluator>();
    register_evaluator<asset_issue_evaluator>();
    register_evaluator<monitored_asset_update_evaluator>();
    register_evaluator<user_issued_asset_update_evaluator>();

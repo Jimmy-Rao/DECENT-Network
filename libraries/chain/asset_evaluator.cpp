@@ -79,6 +79,71 @@ object_id_type asset_create_evaluator::do_apply( const asset_create_operation& o
         a.symbol = op.symbol;
         a.precision = op.precision;
         a.description = op.description;
+        a.options.max_supply = op.options.max_supply;
+        a.options.core_exchange_rate = op.options.core_exchange_rate;
+        a.options.is_exchangeable = op.options.is_exchangeable;
+        a.options.is_fixed_max_supply = false;
+        a.options.extensions = op.options.extensions;
+
+        if( a.options.core_exchange_rate.base.asset_id.instance.value == 0 )
+           a.options.core_exchange_rate.quote.asset_id = next_asset_id;
+        else
+           a.options.core_exchange_rate.base.asset_id = next_asset_id;
+
+        a.monitored_asset_opts = op.monitored_asset_opts;
+        a.dynamic_asset_data_id = dyn_asset.id;
+      });
+   assert( new_asset.id == next_asset_id );
+
+   return new_asset.id;
+} FC_CAPTURE_AND_RETHROW( (op) ) }
+
+void_result asset_create2_evaluator::do_evaluate( const asset_create2_operation& op )
+{ try {
+   database& d = db();
+
+   auto& asset_indx = d.get_index_type<asset_index>().indices().get<by_symbol>();
+   auto asset_symbol_itr = asset_indx.find( op.symbol );
+   FC_ASSERT( asset_symbol_itr == asset_indx.end() );
+
+   auto dotpos = op.symbol.rfind( '.' );
+   if( dotpos != std::string::npos )
+   {
+      auto prefix = op.symbol.substr( 0, dotpos );
+      auto asset_symbol_itr = asset_indx.find( prefix );
+      FC_ASSERT( asset_symbol_itr != asset_indx.end(), "Asset ${s} may only be created by issuer of ${p}, but ${p} has not been registered",
+            ("s",op.symbol)("p",prefix) );
+      FC_ASSERT( asset_symbol_itr->issuer == op.issuer, "Asset ${s} may only be created by issuer of ${p}, ${i}",
+            ("s",op.symbol)("p",prefix)("i", op.issuer(d).name) );
+   }
+
+   core_fee_paid -= core_fee_paid.value/2;
+
+   if( op.monitored_asset_opts.valid() )
+   {
+      FC_ASSERT( op.monitored_asset_opts->feed_lifetime_sec > d.get_global_properties().parameters.block_interval );
+      FC_ASSERT( op.options.max_supply == 0 );
+   }
+
+   return void_result();
+} FC_CAPTURE_AND_RETHROW( (op) ) }
+
+object_id_type asset_create2_evaluator::do_apply( const asset_create2_operation& op )
+{ try {
+   const asset_dynamic_data_object& dyn_asset =
+      db().create<asset_dynamic_data_object>( [&]( asset_dynamic_data_object& a ) {
+         a.current_supply = 0;
+         a.core_pool = core_fee_paid; //op.calculate_fee(db().current_fee_schedule()).value / 2;
+      });
+
+   auto next_asset_id = db().get_index_type<asset_index>().get_next_id();
+
+   const asset_object& new_asset =
+     db().create<asset_object>( [&]( asset_object& a ) {
+        a.issuer = op.issuer;
+        a.symbol = op.symbol;
+        a.precision = op.precision;
+        a.description = op.description;
         a.options = op.options;
 
         if( a.options.core_exchange_rate.base.asset_id.instance.value == 0 )

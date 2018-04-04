@@ -48,7 +48,33 @@ namespace graphene { namespace chain {
 
       /// True to allow implicit conversion of this asset to/from core asset.
       bool is_exchangeable = true;
-      /// False when issuer can change max_supply, otherwise false
+
+      extensions_type extensions;
+
+      /// Perform internal consistency checks.
+      /// @throws fc::exception if any check fails
+      void validate()const;
+   };
+
+   /**
+   * @brief The asset_options2 struct contains options available on all assets in the network
+   *
+   * @note Changes to this struct will break protocol compatibility
+   */
+   struct asset_options2 {
+      /// The maximum supply of this asset which may exist at any given time. This can be as large as
+      /// GRAPHENE_MAX_SHARE_SUPPLY
+      share_type max_supply = GRAPHENE_MAX_SHARE_SUPPLY;
+
+      /// When a non-core asset is used to pay a fee, the blockchain must convert that asset to core asset in
+      /// order to accept the fee. If this asset's fee pool is funded, the chain will automatically deposite fees
+      /// in this asset to its accumulated fees, and withdraw from the fee pool the same amount as converted at
+      /// the core exchange rate.
+      price core_exchange_rate;
+
+      /// True to allow implicit conversion of this asset to/from core asset.
+      bool is_exchangeable = true;
+      /// True when issuer can't change max_supply, otherwise false
       bool is_fixed_max_supply = false;
 
       extensions_type extensions;
@@ -122,6 +148,42 @@ namespace graphene { namespace chain {
 
       /// True to allow implicit conversion of this asset to/from core asset.
       bool is_exchangeable = true;
+
+      extensions_type extensions;
+
+      account_id_type fee_payer()const { return monitored_asset_opts.valid() ? account_id_type() : issuer; }
+      void            validate()const;
+      share_type      calculate_fee( const fee_parameters_type& k )const;
+   };
+
+   /**
+    * @ingroup operations
+    * Creates an asset.
+    */
+   struct asset_create2_operation : public base_operation
+   {
+      struct fee_parameters_type {
+         uint64_t basic_fee      = 1*GRAPHENE_BLOCKCHAIN_PRECISION/1000;
+
+      };
+
+      asset                   fee;
+      /// This account must sign and pay the fee for this operation. Later, this account may update the asset
+      account_id_type         issuer;
+      /// The ticker symbol of this asset
+      string                  symbol;
+      /// Number of digits to the right of decimal point, must be less than or equal to 12
+      uint8_t                 precision = 0;
+
+      /**
+       * data that describes the meaning/purpose of this asset, fee will be charged proportional to
+       * size of description.
+       */
+      string description;
+
+      asset_options2 options;
+
+      optional<monitored_asset_options> monitored_asset_opts;
 
       extensions_type extensions;
 
@@ -326,11 +388,19 @@ FC_REFLECT( graphene::chain::asset_options,
             (max_supply)
             (core_exchange_rate)
             (is_exchangeable)
+            (extensions)
+)
+
+FC_REFLECT( graphene::chain::asset_options2,
+            (max_supply)
+            (core_exchange_rate)
+            (is_exchangeable)
             (is_fixed_max_supply)
             (extensions)
 )
 
 FC_REFLECT( graphene::chain::asset_create_operation::fee_parameters_type, (basic_fee) )
+FC_REFLECT( graphene::chain::asset_create2_operation::fee_parameters_type, (basic_fee) )
 FC_REFLECT( graphene::chain::asset_issue_operation::fee_parameters_type, (fee) )
 FC_REFLECT( graphene::chain::update_monitored_asset_operation::fee_parameters_type, (fee) )
 FC_REFLECT( graphene::chain::update_user_issued_asset_operation::fee_parameters_type, (fee) )
@@ -348,6 +418,17 @@ FC_REFLECT( graphene::chain::asset_create_operation,
             (options)
             (monitored_asset_opts)
             (is_exchangeable)
+            (extensions)
+          )
+
+FC_REFLECT( graphene::chain::asset_create2_operation,
+            (fee)
+            (issuer)
+            (symbol)
+            (precision)
+            (description)
+            (options)
+            (monitored_asset_opts)
             (extensions)
           )
 

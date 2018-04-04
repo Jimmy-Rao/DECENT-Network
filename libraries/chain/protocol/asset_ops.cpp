@@ -103,6 +103,42 @@ void  asset_create_operation::validate()const
    }
 }
 
+share_type asset_create2_operation::calculate_fee(const asset_create2_operation::fee_parameters_type& param)const
+{
+
+   if( monitored_asset_opts.valid() )
+      return param.basic_fee;
+
+   auto fee = 5 * param.basic_fee;
+
+   switch(symbol.size()) {
+      case 3: fee = param.basic_fee * 5000;
+         break;
+      case 4: fee = param.basic_fee * 200;
+         break;
+      default:
+         break;
+   }
+
+   return fee;
+}
+
+void  asset_create2_operation::validate()const
+{
+   FC_ASSERT( fee.amount >= 0 );
+   FC_ASSERT( is_valid_symbol(symbol) );
+   FC_ASSERT(precision <= 12);
+   FC_ASSERT( description.length() <= 1000 );
+
+   if( monitored_asset_opts.valid() ) {
+      monitored_asset_opts->validate();
+      FC_ASSERT(options.max_supply == 0);
+   }
+   else {
+      options.validate();
+   }
+}
+
 share_type asset_issue_operation::calculate_fee(const fee_parameters_type& k)const
 {
    return k.fee + calculate_data_fee( fc::raw::pack_size(memo), k.fee );
@@ -116,6 +152,15 @@ void asset_issue_operation::validate()const {
 }
 
 void asset_options::validate()const
+{
+   FC_ASSERT( max_supply > 0 );
+   FC_ASSERT( max_supply <= GRAPHENE_MAX_SHARE_SUPPLY );
+   core_exchange_rate.validate();
+   FC_ASSERT( core_exchange_rate.base.asset_id.instance.value == 0 ||
+              core_exchange_rate.quote.asset_id.instance.value == 0 );
+}
+
+void asset_options2::validate()const
 {
    FC_ASSERT( max_supply > 0 );
    FC_ASSERT( max_supply <= GRAPHENE_MAX_SHARE_SUPPLY );

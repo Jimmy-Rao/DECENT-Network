@@ -109,7 +109,7 @@ namespace graphene { namespace chain {
          optional<monitored_asset_options> monitored_asset_opts;
 
          /// set for user issued asset
-         asset_options options;
+         asset_options2 options;
 
          /// Current supply, fee pool, and collected fees are stored in a separate object as they change frequently.
          asset_dynamic_data_id_type  dynamic_asset_data_id;

@@ -38,6 +38,15 @@ namespace graphene { namespace chain {
          object_id_type do_apply( const asset_create_operation& o );
    };
 
+   class asset_create2_evaluator : public evaluator<asset_create2_evaluator>
+   {
+      public:
+         typedef asset_create2_operation operation_type;
+
+         void_result do_evaluate( const asset_create2_operation& o );
+         object_id_type do_apply( const asset_create2_operation& o );
+   };
+
    class asset_issue_evaluator : public evaluator<asset_issue_evaluator>
    {
    public:

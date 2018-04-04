@@ -66,6 +66,7 @@ struct get_impacted_account_visitor
    }
 
    void operator()( const asset_create_operation& op ) {}
+   void operator()( const asset_create2_operation& op ) {}
    void operator()( const update_monitored_asset_operation& op ) {}
    void operator()( const update_user_issued_asset_operation& op )
    {

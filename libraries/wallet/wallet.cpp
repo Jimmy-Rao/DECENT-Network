@@ -1142,12 +1142,12 @@ public:
       account_object issuer_account = get_account( issuer );
       FC_ASSERT(!find_asset(symbol).valid(), "Asset with that symbol already exists!");
 
-      asset_create_operation create_op;
+      asset_create2_operation create_op;
       create_op.issuer = issuer_account.id;
       create_op.symbol = symbol;
       create_op.precision = precision;
       create_op.description = description;
-      asset_options opts;
+      asset_options2 opts;
       opts.max_supply = max_supply;
       opts.core_exchange_rate = core_exchange_rate;
       opts.is_exchangeable = is_exchangeable;
